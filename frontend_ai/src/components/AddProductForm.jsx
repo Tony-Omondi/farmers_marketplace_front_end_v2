@@ -1,4 +1,3 @@
-// frontend_ai/src/components/AddProductForm.jsx
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
@@ -11,33 +10,57 @@ const AddProductForm = () => {
         price: '',
         stock: '',
         category: '',
+        farmer: '',
+        is_displayed: false,
         image_files: [],
     });
     const [categories, setCategories] = useState([]);
+    const [farmers, setFarmers] = useState([]);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get(`${BASE_URL}/api/adamin/categories/`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+                const accessToken = localStorage.getItem('access_token');
+                console.log('Access token:', accessToken);
+                if (!accessToken) {
+                    throw new Error('No access token found. Please log in.');
+                }
+
+                // Fetch categories
+                const categoryResponse = await axios.get(`${BASE_URL}/api/adamin/categories/`, {
+                    headers: { Authorization: `Bearer ${accessToken}` }
                 });
-                console.log('Categories fetched:', response.data);
-                setCategories(response.data);
+                console.log('Categories fetched:', categoryResponse.data);
+                setCategories(categoryResponse.data);
+
+                // Fetch farmers
+                const farmerResponse = await axios.get(`${BASE_URL}/api/adamin/api/adamin/farmers/
+`, {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                console.log('Raw farmers response:', farmerResponse.data);
+                setFarmers(farmerResponse.data);
+                if (farmerResponse.data.length === 0) {
+                    setError('No farmers found. Please ensure farmers exist in the system.');
+                }
             } catch (err) {
-                console.error('Fetch categories error:', err.response?.data || err.message);
-                setError('Failed to load categories: ' + (err.response?.data?.detail || err.message));
+                console.error('Fetch data error:', err.response?.data || err.message);
+                setError('Failed to load data: ' + (err.response?.data?.detail || err.message));
             }
         };
-        fetchCategories();
+        fetchData();
     }, []);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        const { name, value, type, checked } = e.target;
+        setFormData({ 
+            ...formData, 
+            [name]: type === 'checkbox' ? checked : value 
+        });
     };
 
     const handleFileChange = (e) => {
@@ -48,7 +71,7 @@ const AddProductForm = () => {
     const handleFiles = useCallback((files) => {
         const validFiles = files.filter(file => 
             file.type.startsWith('image/') && 
-            file.size <= 5 * 1024 * 1024 // 5MB limit
+            file.size <= 5 * 1024 * 1024
         );
         
         if (validFiles.length !== files.length) {
@@ -98,6 +121,8 @@ const AddProductForm = () => {
             form.append('price', parseFloat(formData.price));
             form.append('stock', parseInt(formData.stock) || 0);
             if (formData.category) form.append('category', formData.category);
+            if (formData.farmer) form.append('farmer', formData.farmer);
+            form.append('is_displayed', formData.is_displayed);
             formData.image_files.forEach(file => {
                 form.append('image_files', file);
             });
@@ -108,6 +133,8 @@ const AddProductForm = () => {
                 price: parseFloat(formData.price),
                 stock: parseInt(formData.stock) || 0,
                 category: formData.category,
+                farmer: formData.farmer,
+                is_displayed: formData.is_displayed,
                 image_files: formData.image_files.map(f => f.name),
             });
 
@@ -126,6 +153,8 @@ const AddProductForm = () => {
                 price: '', 
                 stock: '', 
                 category: '', 
+                farmer: '',
+                is_displayed: false,
                 image_files: [] 
             });
         } catch (err) {
@@ -202,6 +231,46 @@ const AddProductForm = () => {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="farmer" className="block text-sm font-medium text-gray-700 mb-1">
+                                Farmer
+                            </label>
+                            <select
+                                id="farmer"
+                                name="farmer"
+                                value={formData.farmer}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                            >
+                                <option value="">Select Farmer</option>
+                                {farmers.length > 0 ? (
+                                    farmers.map(farmer => (
+                                        <option key={farmer.id} value={farmer.id}>
+                                            {farmer.full_name || farmer.email}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option disabled>No farmers available</option>
+                                )}
+                            </select>
+                        </div>
+
+                        <div className="flex items-center">
+                            <input
+                                id="is_displayed"
+                                name="is_displayed"
+                                type="checkbox"
+                                checked={formData.is_displayed}
+                                onChange={handleChange}
+                                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="is_displayed" className="ml-2 block text-sm text-gray-700">
+                                Display Only (Non-clickable)
+                            </label>
                         </div>
                     </div>
                     

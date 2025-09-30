@@ -8,7 +8,8 @@ const AddUserForm = () => {
         email: '',
         full_name: '',
         password: '',
-        is_staff: false
+        is_staff: false,
+        is_farmer: false
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -53,9 +54,10 @@ const AddUserForm = () => {
                 email: '',
                 full_name: '',
                 password: '',
-                is_staff: false
+                is_staff: false,
+                is_farmer: false
             });
-            fetchUsers(); // Refresh the users list
+            fetchUsers();
         } catch (err) {
             setError(err.response?.data?.detail ||
                      err.response?.data?.message ||
@@ -150,6 +152,20 @@ const AddUserForm = () => {
                         </label>
                     </div>
 
+                    <div className="flex items-center">
+                        <input
+                            id="is_farmer"
+                            name="is_farmer"
+                            type="checkbox"
+                            checked={formData.is_farmer}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="is_farmer" className="ml-2 block text-sm text-gray-700">
+                            Is Farmer
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
                         disabled={isLoading}
@@ -174,7 +190,6 @@ const AddUserForm = () => {
                 </form>
             </div>
 
-            {/* Existing Users */}
             {users.length > 0 && (
                 <div className="mt-8 bg-white p-6 rounded-xl shadow-sm">
                     <h3 className="text-lg font-medium text-gray-800 mb-4">Existing Users</h3>
@@ -187,9 +202,11 @@ const AddUserForm = () => {
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                         user.is_staff
                                             ? 'bg-blue-100 text-blue-800'
+                                            : user.is_farmer
+                                            ? 'bg-green-100 text-green-800'
                                             : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                        {user.is_staff ? 'Staff' : 'Regular User'}
+                                        {user.is_staff ? 'Staff' : user.is_farmer ? 'Farmer' : 'Regular User'}
                                     </span>
                                 </div>
                             </div>

@@ -19,6 +19,7 @@ import CreateOrderForm from './components/CreateOrderForm';
 import AddProductForm from './components/AddProductForm';
 import AdminOrderDetails from './components/AdminOrderDetails';
 import AddUserForm from './components/AddUserForm';
+import FarmerSales from './components/FarmerSales';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/AddCategoryForm" element={<AddCategoryForm />} />
       <Route path="/AddProductForm" element={<AddProductForm />} />
+      <Route path="/FarmerSales" element={<FarmerSales />} />
       <Route path="/CreateOrderForm" element={<CreateOrderForm />} />
       <Route path="/AddUserForm" element={<AddUserForm />} />
       <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />

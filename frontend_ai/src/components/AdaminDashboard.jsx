@@ -5,11 +5,12 @@ import AddProductForm from './AddProductForm';
 import AddCategoryForm from './AddCategoryForm';
 import CreateOrderForm from './CreateOrderForm';
 import AddUserForm from './AddUserForm';
+import FarmerSales from './FarmerSales';
 
 const BASE_URL = 'http://127.0.0.1:8000';
 
 const AdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState('users');
+    const [activeTab, setActiveTab] = useState('overview');
     const [data, setData] = useState({ users: [], products: [], orders: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -34,21 +35,20 @@ const AdminDashboard = () => {
                     navigate('/adamin/login');
                     return;
                 }
-                const response = await axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
+                const dashboardResponse = await axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
                     headers: { Authorization: `Bearer ${accessToken}` }
                 });
-                console.log('Dashboard data:', response.data);
-                setData(response.data);
+                console.log('Dashboard data:', dashboardResponse.data);
+                setData(dashboardResponse.data);
 
-                // Calculate statistics
-                const totalRevenue = response.data.orders.reduce((sum, order) => {
+                const totalRevenue = dashboardResponse.data.orders.reduce((sum, order) => {
                     return sum + (parseFloat(order.total_amount) || 0);
                 }, 0);
 
                 setStats({
-                    totalUsers: response.data.users.length,
-                    totalProducts: response.data.products.length,
-                    totalOrders: response.data.orders.length,
+                    totalUsers: dashboardResponse.data.users.length,
+                    totalProducts: dashboardResponse.data.products.length,
+                    totalOrders: dashboardResponse.data.orders.length,
                     totalRevenue: totalRevenue
                 });
             } catch (err) {
@@ -66,7 +66,6 @@ const AdminDashboard = () => {
         fetchData();
     }, [navigate]);
 
-    // Filter data based on date range
     const filterDataByDate = (items, dateField = 'created_at') => {
         if (filterDateRange === 'all') return items;
 
@@ -112,7 +111,6 @@ const AdminDashboard = () => {
         });
     };
 
-    // Filter data based on search query
     const filterDataBySearch = (items, type) => {
         if (!searchQuery) return items;
 
@@ -128,7 +126,8 @@ const AdminDashboard = () => {
                 return items.filter(product =>
                     product.name.toLowerCase().includes(query) ||
                     product.description.toLowerCase().includes(query) ||
-                    (product.category?.name && product.category.name.toLowerCase().includes(query))
+                    (product.category?.name && product.category.name.toLowerCase().includes(query)) ||
+                    (product.farmer?.user && product.farmer.user.toLowerCase().includes(query))
                 );
             case 'orders':
                 return items.filter(order =>
@@ -162,6 +161,7 @@ const AdminDashboard = () => {
         { id: 'add-category', label: 'Add Category', icon: '📂' },
         { id: 'add-user', label: 'Add User', icon: '👤' },
         { id: 'create-order', label: 'Create Order', icon: '🛒' },
+        { id: 'farmer-sales', label: 'Farmer Sales', icon: '🌾' },
     ];
 
     const getFilteredData = (type) => {
@@ -183,7 +183,7 @@ const AdminDashboard = () => {
                 return [];
         }
 
-        const dateFiltered = filterDataByDate(items, dateField);
+        const dateFiltered = dateField ? filterDataByDate(items, dateField) : items;
         return filterDataBySearch(dateFiltered, type);
     };
 
@@ -210,7 +210,6 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* Stats Overview */}
                 {activeTab === 'overview' && !isLoading && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -260,8 +259,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* Filters */}
-                {(activeTab === 'users' || activeTab === 'products' || activeTab === 'orders' || activeTab === 'payments') && !isLoading && (
+                {(activeTab === 'users' || activeTab === 'products' || activeTab === 'orders' || activeTab === 'payments' || activeTab === 'farmer-sales') && !isLoading && (
                     <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
                         <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
                             <div className="flex-1">
@@ -308,7 +306,6 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* Tabs */}
                 <div className="mb-6">
                     <div className="flex overflow-x-auto space-x-4 border-b">
                         {tabs.map(tab => (
@@ -392,6 +389,7 @@ const AdminDashboard = () => {
                                                 <th className="p-3">Full Name</th>
                                                 <th className="p-3">Email</th>
                                                 <th className="p-3">Staff</th>
+                                                <th className="p-3">Farmer</th>
                                                 <th className="p-3">Active</th>
                                                 <th className="p-3">Joined</th>
                                             </tr>
@@ -406,6 +404,13 @@ const AdminDashboard = () => {
                                                             user.is_staff ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                                         }`}>
                                                             {user.is_staff ? 'Yes' : 'No'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <span className={`px-2 py-1 rounded-full text-xs ${
+                                                            user.is_farmer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                            {user.is_farmer ? 'Yes' : 'No'}
                                                         </span>
                                                     </td>
                                                     <td className="p-3">
@@ -455,9 +460,12 @@ const AdminDashboard = () => {
                                             <div className="mt-2 text-sm text-gray-500">
                                                 Category: {product.category?.name || 'None'}
                                             </div>
-                                            <p className="text-xs text-gray-400 mt-2">
-                                                Created: {new Date(product.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
-                                            </p>
+                                            <div className="mt-2 text-sm text-gray-500">
+                                                Farmer: {product.farmer?.user || 'None'}
+                                            </div>
+                                            <div className="mt-2 text-sm text-gray-500">
+                                                Display Only: {product.is_displayed ? 'Yes' : 'No'}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -475,18 +483,17 @@ const AdminDashboard = () => {
                                         <thead>
                                             <tr className="bg-gray-100 text-gray-600">
                                                 <th className="p-3">Order ID</th>
-                                                <th className="p-3">User</th>
+                                                <th className="p-3">Customer</th>
                                                 <th className="p-3">Total</th>
                                                 <th className="p-3">Status</th>
                                                 <th className="p-3">Payment Status</th>
                                                 <th className="p-3">Date</th>
-                                                <th className="p-3">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {getFilteredData('orders').map(order => (
                                                 <tr key={order.order_id} className="border-t hover:bg-gray-50">
-                                                    <td className="p-3 font-medium">#{order.order_id}</td>
+                                                    <td className="p-3">{order.order_id}</td>
                                                     <td className="p-3">{order.user.email}</td>
                                                     <td className="p-3">${order.total_amount}</td>
                                                     <td className="p-3">
@@ -508,14 +515,6 @@ const AdminDashboard = () => {
                                                         </span>
                                                     </td>
                                                     <td className="p-3">{new Date(order.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}</td>
-                                                    <td className="p-3">
-                                                        <button
-                                                            onClick={() => navigate(`/admin/orders/${order.order_id}`)}
-                                                            className="text-emerald-600 hover:text-emerald-800 text-sm font-medium"
-                                                        >
-                                                            View Details
-                                                        </button>
-                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -528,26 +527,24 @@ const AdminDashboard = () => {
                             <div>
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-semibold">Payments</h2>
-                                    <span className="text-gray-500">
-                                        {getFilteredData('payments').length} payments
-                                    </span>
+                                    <span className="text-gray-500">{getFilteredData('payments').length} payments</span>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="bg-gray-100 text-gray-600">
-                                                <th className="p-3">Reference</th>
                                                 <th className="p-3">Order ID</th>
+                                                <th className="p-3">Reference</th>
                                                 <th className="p-3">Amount</th>
                                                 <th className="p-3">Status</th>
-                                                <th className="p-3">Created</th>
+                                                <th className="p-3">Date</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {getFilteredData('payments').map(order => (
-                                                <tr key={order.payment.reference} className="border-t hover:bg-gray-50">
-                                                    <td className="p-3">{order.payment.reference || 'N/A'}</td>
-                                                    <td className="p-3">#{order.order_id}</td>
+                                                <tr key={order.order_id} className="border-t hover:bg-gray-50">
+                                                    <td className="p-3">{order.order_id}</td>
+                                                    <td className="p-3">{order.payment.reference}</td>
                                                     <td className="p-3">${order.payment.amount}</td>
                                                     <td className="p-3">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${
@@ -561,13 +558,6 @@ const AdminDashboard = () => {
                                                     <td className="p-3">{new Date(order.payment.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}</td>
                                                 </tr>
                                             ))}
-                                            {data.orders.filter(order => !order.payment || !order.payment.reference).length > 0 && (
-                                                <tr>
-                                                    <td colSpan="5" className="p-3 text-gray-500 text-center">
-                                                        Some orders (e.g., cash payments) have no payment record.
-                                                    </td>
-                                                </tr>
-                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -578,6 +568,7 @@ const AdminDashboard = () => {
                         {activeTab === 'add-category' && <AddCategoryForm />}
                         {activeTab === 'add-user' && <AddUserForm />}
                         {activeTab === 'create-order' && <CreateOrderForm />}
+                        {activeTab === 'farmer-sales' && <FarmerSales />}
                     </div>
                 )}
             </div>
