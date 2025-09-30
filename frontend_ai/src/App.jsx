@@ -1,4 +1,3 @@
-
 import { Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Landing from './components/Landing';
@@ -19,6 +18,7 @@ import AddCategoryForm from './components/AddCategoryForm';
 import CreateOrderForm from './components/CreateOrderForm';
 import AddProductForm from './components/AddProductForm';
 import AdminOrderDetails from './components/AdminOrderDetails';
+import AddUserForm from './components/AddUserForm';
 
 function App() {
   return (
@@ -27,6 +27,7 @@ function App() {
       <Route path="/AddCategoryForm" element={<AddCategoryForm />} />
       <Route path="/AddProductForm" element={<AddProductForm />} />
       <Route path="/CreateOrderForm" element={<CreateOrderForm />} />
+      <Route path="/AddUserForm" element={<AddUserForm />} />
       <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />

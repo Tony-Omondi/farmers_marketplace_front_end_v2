@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'; 
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AddProductForm from './AddProductForm';
 import AddCategoryForm from './AddCategoryForm';
 import CreateOrderForm from './CreateOrderForm';
+import AddUserForm from './AddUserForm';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('users');
@@ -38,12 +39,12 @@ const AdminDashboard = () => {
                 });
                 console.log('Dashboard data:', response.data);
                 setData(response.data);
-                
+
                 // Calculate statistics
                 const totalRevenue = response.data.orders.reduce((sum, order) => {
                     return sum + (parseFloat(order.total_amount) || 0);
                 }, 0);
-                
+
                 setStats({
                     totalUsers: response.data.users.length,
                     totalProducts: response.data.products.length,
@@ -68,10 +69,10 @@ const AdminDashboard = () => {
     // Filter data based on date range
     const filterDataByDate = (items, dateField = 'created_at') => {
         if (filterDateRange === 'all') return items;
-        
+
         const now = new Date();
         let startDate;
-        
+
         switch(filterDateRange) {
             case 'today':
                 startDate = new Date(now.setHours(0, 0, 0, 0));
@@ -104,7 +105,7 @@ const AdminDashboard = () => {
             default:
                 return items;
         }
-        
+
         return items.filter(item => {
             const itemDate = new Date(item[dateField]);
             return itemDate >= startDate;
@@ -114,31 +115,31 @@ const AdminDashboard = () => {
     // Filter data based on search query
     const filterDataBySearch = (items, type) => {
         if (!searchQuery) return items;
-        
+
         const query = searchQuery.toLowerCase();
-        
+
         switch(type) {
             case 'users':
-                return items.filter(user => 
-                    user.full_name.toLowerCase().includes(query) || 
+                return items.filter(user =>
+                    user.full_name.toLowerCase().includes(query) ||
                     user.email.toLowerCase().includes(query)
                 );
             case 'products':
-                return items.filter(product => 
-                    product.name.toLowerCase().includes(query) || 
+                return items.filter(product =>
+                    product.name.toLowerCase().includes(query) ||
                     product.description.toLowerCase().includes(query) ||
                     (product.category?.name && product.category.name.toLowerCase().includes(query))
                 );
             case 'orders':
-                return items.filter(order => 
-                    order.order_id.toLowerCase().includes(query) || 
+                return items.filter(order =>
+                    order.order_id.toLowerCase().includes(query) ||
                     order.user.email.toLowerCase().includes(query) ||
                     order.status.toLowerCase().includes(query) ||
                     String(order.total_amount).includes(query) ||
                     order.payment_status.toLowerCase().includes(query)
                 );
             case 'payments':
-                return items.filter(order => 
+                return items.filter(order =>
                     order.payment && (
                         order.payment.reference?.toLowerCase().includes(query) ||
                         String(order.payment.amount).includes(query) ||
@@ -159,6 +160,7 @@ const AdminDashboard = () => {
         { id: 'payments', label: 'Payments', icon: '💳' },
         { id: 'add-product', label: 'Add Product', icon: '➕' },
         { id: 'add-category', label: 'Add Category', icon: '📂' },
+        { id: 'add-user', label: 'Add User', icon: '👤' },
         { id: 'create-order', label: 'Create Order', icon: '🛒' },
     ];
 
@@ -180,7 +182,7 @@ const AdminDashboard = () => {
             default:
                 return [];
         }
-        
+
         const dateFiltered = filterDataByDate(items, dateField);
         return filterDataBySearch(dateFiltered, type);
     };
@@ -190,7 +192,7 @@ const AdminDashboard = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-                    <button 
+                    <button
                         onClick={() => {
                             localStorage.removeItem('access_token');
                             localStorage.removeItem('refresh_token');
@@ -201,13 +203,13 @@ const AdminDashboard = () => {
                         Logout
                     </button>
                 </div>
-                
+
                 {error && (
                     <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
                         <p>{error}</p>
                     </div>
                 )}
-                
+
                 {/* Stats Overview */}
                 {activeTab === 'overview' && !isLoading && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -257,7 +259,7 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 )}
-                
+
                 {/* Filters */}
                 {(activeTab === 'users' || activeTab === 'products' || activeTab === 'orders' || activeTab === 'payments') && !isLoading && (
                     <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
@@ -284,7 +286,7 @@ const AdminDashboard = () => {
                                     <option value="last30">Last 30 Days</option>
                                     <option value="custom">Custom Range</option>
                                 </select>
-                                
+
                                 {filterDateRange === 'custom' && (
                                     <div className="flex space-x-2">
                                         <input
@@ -305,7 +307,7 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 )}
-                
+
                 {/* Tabs */}
                 <div className="mb-6">
                     <div className="flex overflow-x-auto space-x-4 border-b">
@@ -325,7 +327,7 @@ const AdminDashboard = () => {
                         ))}
                     </div>
                 </div>
-                
+
                 {isLoading ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600"></div>
@@ -376,7 +378,7 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         )}
-                        
+
                         {activeTab === 'users' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -421,7 +423,7 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         )}
-                        
+
                         {activeTab === 'products' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -461,7 +463,7 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         )}
-                        
+
                         {activeTab === 'orders' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -521,7 +523,7 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         )}
-                        
+
                         {activeTab === 'payments' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -571,9 +573,10 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         )}
-                        
+
                         {activeTab === 'add-product' && <AddProductForm />}
                         {activeTab === 'add-category' && <AddCategoryForm />}
+                        {activeTab === 'add-user' && <AddUserForm />}
                         {activeTab === 'create-order' && <CreateOrderForm />}
                     </div>
                 )}

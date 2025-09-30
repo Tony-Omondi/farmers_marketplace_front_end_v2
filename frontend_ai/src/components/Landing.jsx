@@ -136,9 +136,9 @@ const Landing = () => {
             <Link to="/login" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm text-sm sm:text-base">
               Login
             </Link>
-            <Link to="/signup" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-sm sm:text-base">
+            {/* <Link to="/signup" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-sm sm:text-base">
               Register
-            </Link>
+            </Link> */}
             
             {/* Mobile menu button */}
             <button 

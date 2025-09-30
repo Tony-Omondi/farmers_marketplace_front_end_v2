@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -120,10 +120,10 @@ const Login = () => {
         </div>
         <div className="mt-2 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            {/* Don't have an account?{' '}
             <Link to="/signup" className="text-emerald-600 hover:text-emerald-500 font-medium">
               Sign up
-            </Link>
+            </Link> */}
           </p>
         </div>
       </div>

@@ -1,57 +1,41 @@
-// frontend_ai/src/components/AddCategoryForm.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const BASE_URL = 'http://127.0.0.1:8000';
 
-const AddCategoryForm = () => {
-    const [formData, setFormData] = useState({ 
-        name: '', 
-        slug: '',
-        description: '',
-        is_active: true
+const AddUserForm = () => {
+    const [formData, setFormData] = useState({
+        email: '',
+        full_name: '',
+        password: '',
+        is_staff: false
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [categories, setCategories] = useState([]);
+    const [users, setUsers] = useState([]);
 
     useEffect(() => {
-        fetchCategories();
+        fetchUsers();
     }, []);
 
-    const fetchCategories = async () => {
+    const fetchUsers = async () => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/adamin/categories/`, {
+            const response = await axios.get(`${BASE_URL}/api/adamin/users/`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
             });
-            setCategories(response.data);
+            setUsers(response.data);
         } catch (err) {
-            console.error('Failed to fetch categories', err);
+            console.error('Failed to fetch users', err);
         }
     };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData({ 
-            ...formData, 
-            [name]: type === 'checkbox' ? checked : value 
+        setFormData({
+            ...formData,
+            [name]: type === 'checkbox' ? checked : value
         });
-        
-        // Auto-generate slug from name
-        if (name === 'name') {
-            const generatedSlug = value
-                .toLowerCase()
-                .replace(/[^a-z0-9 -]/g, '') // Remove invalid chars
-                .replace(/\s+/g, '-')        // Replace spaces with -
-                .replace(/-+/g, '-');        // Replace multiple - with single -
-            
-            setFormData(prev => ({ 
-                ...prev, 
-                name: value,
-                slug: prev.slug || generatedSlug 
-            }));
-        }
     };
 
     const handleSubmit = async (e) => {
@@ -59,38 +43,33 @@ const AddCategoryForm = () => {
         setIsLoading(true);
         setError('');
         setSuccess('');
-        
+
         try {
-            await axios.post(`${BASE_URL}/api/adamin/categories/create/`, formData, {
+            await axios.post(`${BASE_URL}/api/adamin/users/create/`, formData, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
             });
-            setSuccess('Category created successfully!');
-            setFormData({ 
-                name: '', 
-                slug: '',
-                description: '',
-                is_active: true
+            setSuccess('User created successfully!');
+            setFormData({
+                email: '',
+                full_name: '',
+                password: '',
+                is_staff: false
             });
-            fetchCategories(); // Refresh the categories list
+            fetchUsers(); // Refresh the users list
         } catch (err) {
-            setError(err.response?.data?.detail || 
-                     err.response?.data?.message || 
-                     'Failed to create category');
+            setError(err.response?.data?.detail ||
+                     err.response?.data?.message ||
+                     'Failed to create user');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleSlugEdit = (e) => {
-        // Only update slug if user manually edits it
-        setFormData({ ...formData, slug: e.target.value });
-    };
-
     return (
         <div className="max-w-2xl mx-auto">
             <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Add New Category</h2>
-                
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Add New User</h2>
+
                 {error && (
                     <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-start">
                         <svg className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -99,7 +78,7 @@ const AddCategoryForm = () => {
                         <div>{error}</div>
                     </div>
                 )}
-                
+
                 {success && (
                     <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200 flex items-start">
                         <svg className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -108,78 +87,75 @@ const AddCategoryForm = () => {
                         <div>{success}</div>
                     </div>
                 )}
-                
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                            Category Name *
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                            Email *
                         </label>
                         <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
                             onChange={handleChange}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            placeholder="e.g., Electronics, Clothing, Books"
+                            placeholder="e.g., user@example.com"
                             required
                         />
                     </div>
-                    
+
                     <div>
-                        <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
-                            Slug *
+                        <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
+                            Full Name
                         </label>
                         <input
                             type="text"
-                            id="slug"
-                            name="slug"
-                            value={formData.slug}
-                            onChange={handleSlugEdit}
+                            id="full_name"
+                            name="full_name"
+                            value={formData.full_name}
+                            onChange={handleChange}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            placeholder="e.g., electronics, clothing, books"
+                            placeholder="e.g., John Doe"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                            Password *
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                            placeholder="Enter a secure password"
                             required
                         />
-                        <p className="mt-1 text-sm text-gray-500">
-                            URL-friendly version of the name. Use only lowercase letters, numbers, and hyphens.
-                        </p>
                     </div>
-                    
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                            Description
-                        </label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            placeholder="Brief description of this category..."
-                        />
-                    </div>
-                    
+
                     <div className="flex items-center">
                         <input
-                            id="is_active"
-                            name="is_active"
+                            id="is_staff"
+                            name="is_staff"
                             type="checkbox"
-                            checked={formData.is_active}
+                            checked={formData.is_staff}
                             onChange={handleChange}
                             className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
                         />
-                        <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
-                            Category is active
+                        <label htmlFor="is_staff" className="ml-2 block text-sm text-gray-700">
+                            Is Staff (Admin)
                         </label>
                     </div>
-                    
+
                     <button
                         type="submit"
                         disabled={isLoading}
                         className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                            isLoading 
-                                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                            isLoading
+                                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                                 : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'
                         }`}
                     >
@@ -189,35 +165,32 @@ const AddCategoryForm = () => {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Creating Category...
+                                Creating User...
                             </div>
                         ) : (
-                            'Create Category'
+                            'Create User'
                         )}
                     </button>
                 </form>
             </div>
-            
-            {/* Existing Categories */}
-            {categories.length > 0 && (
+
+            {/* Existing Users */}
+            {users.length > 0 && (
                 <div className="mt-8 bg-white p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg font-medium text-gray-800 mb-4">Existing Categories</h3>
+                    <h3 className="text-lg font-medium text-gray-800 mb-4">Existing Users</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {categories.map(category => (
-                            <div key={category.id} className="border rounded-lg p-4 flex justify-between items-center">
+                        {users.map(user => (
+                            <div key={user.email} className="border rounded-lg p-4 flex justify-between items-center">
                                 <div>
-                                    <h4 className="font-medium">{category.name}</h4>
-                                    <p className="text-sm text-gray-500">{category.slug}</p>
+                                    <h4 className="font-medium">{user.full_name || 'No Name'}</h4>
+                                    <p className="text-sm text-gray-500">{user.email}</p>
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        category.is_active 
-                                            ? 'bg-green-100 text-green-800' 
+                                        user.is_staff
+                                            ? 'bg-blue-100 text-blue-800'
                                             : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                        {category.is_active ? 'Active' : 'Inactive'}
+                                        {user.is_staff ? 'Staff' : 'Regular User'}
                                     </span>
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                    {category.product_count || 0} products
                                 </div>
                             </div>
                         ))}
@@ -228,4 +201,4 @@ const AddCategoryForm = () => {
     );
 };
 
-export default AddCategoryForm;
+export default AddUserForm;

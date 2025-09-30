@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);

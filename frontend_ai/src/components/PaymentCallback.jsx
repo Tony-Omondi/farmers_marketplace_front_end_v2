@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 const PaymentCallback = () => {
   const [error, setError] = useState('');
