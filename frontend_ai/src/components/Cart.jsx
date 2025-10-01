@@ -363,12 +363,12 @@ const Cart = () => {
                 >
                   Continue Shopping
                 </a>
-                <a
+                {/* <a
                   href="/checkout"
                   className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-center font-medium transition-colors"
                 >
                   Proceed to Checkout
-                </a>
+                </a> */}
               </div>
             </div>
           </div>

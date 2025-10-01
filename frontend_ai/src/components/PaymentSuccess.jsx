@@ -278,7 +278,7 @@ const PaymentSuccess = () => {
             View All Orders
           </button>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/adamin/dashboard')}
             className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
           >
             Back to Dashboard

@@ -15,9 +15,8 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('name');
-  const [showCartNotification, setShowCartNotification] = useState(false);
-  const [notificationProduct, setNotificationProduct] = useState(null);
   const [wishlist, setWishlist] = useState(new Set());
+  const [activeNotifications, setActiveNotifications] = useState(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -152,44 +151,58 @@ const Dashboard = () => {
     return isNaN(numPrice) ? '0.00' : numPrice.toFixed(2);
   };
 
+  const showProductNotification = (productId) => {
+    const newNotifications = new Set(activeNotifications);
+    newNotifications.add(productId);
+    setActiveNotifications(newNotifications);
+
+    setTimeout(() => {
+      const updatedNotifications = new Set(activeNotifications);
+      updatedNotifications.delete(productId);
+      setActiveNotifications(updatedNotifications);
+    }, 2000);
+  };
+
   const addToCart = async (product) => {
-    console.log('Adding product to cart:', { product_id: product.id }); // Debug product ID
+    console.log('Adding product to cart:', { product_id: product.id });
     if (product.is_displayed) {
       setError('This product is for display only and cannot be added to the cart.');
       return;
     }
     try {
       const token = localStorage.getItem('access_token');
+      
       // Verify product exists
       const productResponse = await axios.get(`${BASE_URL}/api/products/${product.id}/`, {
         headers: { Authorization: `Bearer ${token.trim()}` },
       });
       if (!productResponse.data) {
         setError('Product no longer available.');
-        await refreshProducts(); // Refresh product list
+        await refreshProducts();
         return;
       }
+      
       // Check stock
       if (productResponse.data.stock < 1) {
         setError(`Insufficient stock for ${product.name}.`);
         return;
       }
+
       const response = await axios.post(
         `${BASE_URL}/api/orders/cart-items/`,
-        { product_id: product.id, quantity: 1 }, // Changed 'product' to 'product_id'
+        { product_id: product.id, quantity: 1 },
         { headers: { Authorization: `Bearer ${token.trim()}` } }
       );
+      
       // Refresh cart
       const cartResponse = await axios.get(`${BASE_URL}/api/orders/carts/`, {
         headers: { Authorization: `Bearer ${token.trim()}` },
       });
       setCart(cartResponse.data[0] || null);
-      // Show notification
-      setNotificationProduct(product);
-      setShowCartNotification(true);
-      setTimeout(() => {
-        setShowCartNotification(false);
-      }, 3000);
+      
+      // Show product-specific notification
+      showProductNotification(product.id);
+      
     } catch (err) {
       console.error('Add to cart error:', err.response?.data);
       setError(
@@ -198,7 +211,7 @@ const Dashboard = () => {
         'Failed to add to cart.'
       );
       if (err.response?.data?.product_id?.[0]?.includes('Invalid pk')) {
-        await refreshProducts(); // Refresh products if invalid product ID
+        await refreshProducts();
       }
     }
   };
@@ -397,10 +410,10 @@ const Dashboard = () => {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   selectedCategory === 'all'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-emerald-600 text-white shadow-sm scale-105'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105'
                 }`}
               >
                 All
@@ -409,10 +422,10 @@ const Dashboard = () => {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id.toString())}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     selectedCategory === category.id.toString()
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-emerald-600 text-white shadow-sm scale-105'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105'
                   }`}
                 >
                   {category.name}
@@ -460,12 +473,19 @@ const Dashboard = () => {
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
-                      className={`bg-white border border-gray-200 rounded-xl overflow-hidden ${
+                      className={`bg-white border border-gray-200 rounded-xl overflow-hidden relative ${
                         product.is_displayed
                           ? 'opacity-75 filter grayscale cursor-not-allowed'
-                          : 'hover:shadow-lg transition-all duration-300 group'
+                          : 'hover:shadow-lg transition-all duration-300 group hover:border-emerald-200'
                       }`}
                     >
+                      {/* Product Notification Badge */}
+                      {activeNotifications.has(product.id) && (
+                        <div className="absolute top-3 left-3 z-10 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-medium animate-pulse shadow-lg">
+                          ✓ Added to Cart
+                        </div>
+                      )}
+                      
                       <div className="relative overflow-hidden">
                         <img
                           src={
@@ -484,9 +504,11 @@ const Dashboard = () => {
                         <div className="absolute top-3 right-3 flex flex-col space-y-2">
                           <button
                             onClick={() => toggleWishlist(product.id)}
-                            className={`p-2 rounded-full shadow-md ${
-                              wishlist.has(product.id) ? 'bg-red-500 text-white' : 'bg-white text-gray-600'
-                            } hover:bg-red-500 hover:text-white transition-colors`}
+                            className={`p-2 rounded-full shadow-md transition-all duration-200 ${
+                              wishlist.has(product.id) 
+                                ? 'bg-red-500 text-white scale-110' 
+                                : 'bg-white text-gray-600 hover:bg-red-500 hover:text-white hover:scale-110'
+                            } ${product.is_displayed ? 'opacity-50 cursor-not-allowed' : ''}`}
                             aria-label="Add to wishlist"
                             disabled={product.is_displayed}
                           >
@@ -498,7 +520,11 @@ const Dashboard = () => {
                         {!product.is_displayed && (
                           <button
                             onClick={() => addToCart(product)}
-                            className="absolute top-3 left-3 p-2 bg-white rounded-full shadow-md hover:bg-emerald-500 hover:text-white transition-colors"
+                            className={`absolute top-12 right-3 p-2 rounded-full shadow-md transition-all duration-200 ${
+                              activeNotifications.has(product.id)
+                                ? 'bg-emerald-500 text-white scale-110'
+                                : 'bg-white text-gray-600 hover:bg-emerald-500 hover:text-white hover:scale-110'
+                            }`}
                             aria-label="Add to cart"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,19 +544,45 @@ const Dashboard = () => {
                         </h3>
                         <p className="text-gray-600 text-sm mb-3 line-clamp-2 h-10">{product.description}</p>
                         <div className="flex items-center justify-between">
-                          <p className="text-emerald-600 font-bold text-lg">KSh {formatPrice(product.price)}</p>
+                          <div>
+                            <p className="text-emerald-600 font-bold text-lg">KSh {formatPrice(product.price)}</p>
+                            {product.stock !== undefined && (
+                              <p className={`text-xs ${
+                                product.stock > 10 ? 'text-green-600' : 
+                                product.stock > 0 ? 'text-orange-600' : 'text-red-600'
+                              }`}>
+                                {product.stock > 10 ? 'In Stock' : 
+                                 product.stock > 0 ? `Only ${product.stock} left` : 'Out of Stock'}
+                              </p>
+                            )}
+                          </div>
                           {!product.is_displayed ? (
                             <button
                               onClick={() => addToCart(product)}
-                              className="px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center"
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${
+                                activeNotifications.has(product.id)
+                                  ? 'bg-emerald-500 text-white scale-105 shadow-md'
+                                  : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-105 hover:shadow-md'
+                              }`}
                             >
-                              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                              </svg>
-                              Add
+                              {activeNotifications.has(product.id) ? (
+                                <>
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                  </svg>
+                                  Added
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                  </svg>
+                                  Add
+                                </>
+                              )}
                             </button>
                           ) : (
-                            <p className="text-sm text-gray-500">Display Only</p>
+                            <p className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Display Only</p>
                           )}
                         </div>
                       </div>
@@ -545,7 +597,9 @@ const Dashboard = () => {
 
       {/* Mobile Sidebar Toggle */}
       <button
-        className={`md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-md transition-all ${isOpen ? 'transform rotate-90' : ''}`}
+        className={`md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-md transition-all hover:scale-105 ${
+          isOpen ? 'transform rotate-90 bg-emerald-50' : ''
+        }`}
         onClick={toggleSidebar}
         aria-label="Toggle menu"
       >
@@ -564,7 +618,7 @@ const Dashboard = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
           </svg>
           {cartCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
               {cartCount}
             </span>
           )}
@@ -573,32 +627,11 @@ const Dashboard = () => {
 
       {/* Sidebar Overlay */}
       <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-20 transition-opacity ${isOpen ? 'opacity-100 md:opacity-0' : 'opacity-0 pointer-events-none'} md:hidden`}
+        className={`fixed inset-0 bg-black bg-opacity-50 z-20 transition-opacity ${
+          isOpen ? 'opacity-100 md:opacity-0' : 'opacity-0 pointer-events-none'
+        } md:hidden`}
         onClick={toggleSidebar}
       ></div>
-
-      {/* Cart Notification */}
-      {showCartNotification && (
-        <div className="fixed top-4 right-4 z-50 bg-white p-4 rounded-lg shadow-lg border border-emerald-200 flex items-center animate-fadeIn">
-          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
-            <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-          </div>
-          <div>
-            <p className="font-medium text-gray-800">Added to cart</p>
-            <p className="text-sm text-gray-600">{notificationProduct?.name}</p>
-          </div>
-          <button
-            onClick={() => setShowCartNotification(false)}
-            className="ml-4 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-      )}
 
       <style jsx>{`
         @keyframes fadeIn {
