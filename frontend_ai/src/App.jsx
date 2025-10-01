@@ -21,6 +21,7 @@ import AdminOrderDetails from './components/AdminOrderDetails';
 import AddUserForm from './components/AddUserForm';
 import FarmerSales from './components/FarmerSales';
 import EditProductForm from './components/EditProductForm';
+import AdminPaymentSuccess from './components/AdminPaymentSuccess';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
       <Route path="/FarmerSales" element={<FarmerSales />} />
       <Route path="/EditProductForm" element={<EditProductForm />} />
       <Route path="/CreateOrderForm" element={<CreateOrderForm />} />
+      <Route path="/AdminPaymentSucces" element={<AdminPaymentSucces />} />
       <Route path="/AddUserForm" element={<AddUserForm />} />
       <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />
       <Route path="/login" element={<Login />} />
