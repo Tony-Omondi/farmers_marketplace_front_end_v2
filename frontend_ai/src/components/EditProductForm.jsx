@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'https://farmers-marketplace-backend-v2.onrender.com';
 
 const EditProductForm = () => {
   const { productId } = useParams();

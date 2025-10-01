@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'https://farmers-marketplace-backend-v2.onrender.com';
 
 const AdminOrderDetails = () => {
     const { orderId } = useParams();

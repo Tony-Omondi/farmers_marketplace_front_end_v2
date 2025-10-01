@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'https://farmers-marketplace-backend-v2.onrender.com';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
