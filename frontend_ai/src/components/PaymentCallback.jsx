@@ -15,7 +15,7 @@ const PaymentCallback = () => {
       const reference = params.get('reference');
       if (!reference) {
         setError('No payment reference provided.');
-        setTimeout(() => navigate('/cart'), 3000);
+        setTimeout(() => navigate('/admin/carts?refresh=true'), 3000);
         return;
       }
 
@@ -26,10 +26,24 @@ const PaymentCallback = () => {
           navigate('/login');
           return;
         }
+
+        // Check if user is admin
+        let isAdmin = false;
+        try {
+          const userResponse = await axios.get(`${BASE_URL}/api/accounts/profile/`, {
+            headers: { Authorization: `Bearer ${token.trim()}` },
+          });
+          isAdmin = userResponse.data.is_staff;
+        } catch (err) {
+          console.error('Profile fetch error:', err.response?.data || err.message);
+          // Continue with payment verification even if profile fetch fails
+        }
+
         const response = await axios.get(`${BASE_URL}/api/orders/orders/payment/callback/`, {
           headers: { Authorization: `Bearer ${token.trim()}` },
           params: { reference },
         });
+
         if (response.data.status) {
           // Fetch the order to get its pk (id)
           const orderResponse = await axios.get(`${BASE_URL}/api/orders/orders/`, {
@@ -38,19 +52,19 @@ const PaymentCallback = () => {
           });
           const order = orderResponse.data.find((o) => o.order_id === response.data.order_id);
           if (order) {
-            navigate('/payment-success', { state: { orderId: order.id } });
+            navigate(isAdmin ? '/admin/payment-success' : '/payment-success', { state: { orderId: order.id } });
           } else {
             setError('Order not found.');
-            setTimeout(() => navigate('/cart'), 3000);
+            setTimeout(() => navigate(isAdmin ? '/admin/carts?refresh=true' : '/cart'), 3000);
           }
         } else {
           setError(response.data.message || 'Payment verification failed.');
-          setTimeout(() => navigate('/cart'), 3000);
+          setTimeout(() => navigate(isAdmin ? '/admin/carts?refresh=true' : '/cart'), 3000);
         }
       } catch (err) {
         console.error('Payment callback error:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to verify payment.');
-        setTimeout(() => navigate('/cart'), 3000);
+        setTimeout(() => navigate(isAdmin ? '/admin/carts?refresh=true' : '/cart'), 3000);
       }
     };
 

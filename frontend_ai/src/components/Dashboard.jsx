@@ -123,6 +123,20 @@ const Dashboard = () => {
     fetchData();
   }, [navigate]);
 
+  const refreshProducts = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get(`${BASE_URL}/api/products/`, {
+        headers: { Authorization: `Bearer ${token.trim()}` },
+      });
+      setProducts(response.data);
+      setError(''); // Clear any existing errors after successful refresh
+    } catch (err) {
+      console.error('Refresh products error:', err.response?.data);
+      setError('Failed to refresh products. Please try again.');
+    }
+  };
+
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
@@ -139,15 +153,30 @@ const Dashboard = () => {
   };
 
   const addToCart = async (product) => {
+    console.log('Adding product to cart:', { product_id: product.id }); // Debug product ID
     if (product.is_displayed) {
       setError('This product is for display only and cannot be added to the cart.');
       return;
     }
     try {
       const token = localStorage.getItem('access_token');
+      // Verify product exists
+      const productResponse = await axios.get(`${BASE_URL}/api/products/${product.id}/`, {
+        headers: { Authorization: `Bearer ${token.trim()}` },
+      });
+      if (!productResponse.data) {
+        setError('Product no longer available.');
+        await refreshProducts(); // Refresh product list
+        return;
+      }
+      // Check stock
+      if (productResponse.data.stock < 1) {
+        setError(`Insufficient stock for ${product.name}.`);
+        return;
+      }
       const response = await axios.post(
         `${BASE_URL}/api/orders/cart-items/`,
-        { product: product.id, quantity: 1 },
+        { product_id: product.id, quantity: 1 }, // Changed 'product' to 'product_id'
         { headers: { Authorization: `Bearer ${token.trim()}` } }
       );
       // Refresh cart
@@ -163,7 +192,14 @@ const Dashboard = () => {
       }, 3000);
     } catch (err) {
       console.error('Add to cart error:', err.response?.data);
-      setError(err.response?.data?.quantity || 'Failed to add to cart.');
+      setError(
+        err.response?.data?.product_id?.[0] ||
+        err.response?.data?.quantity?.[0] ||
+        'Failed to add to cart.'
+      );
+      if (err.response?.data?.product_id?.[0]?.includes('Invalid pk')) {
+        await refreshProducts(); // Refresh products if invalid product ID
+      }
     }
   };
 
@@ -589,4 +625,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

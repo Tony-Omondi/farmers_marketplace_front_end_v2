@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const BASE_URL = 'http://127.0.0.1:8000';
@@ -19,6 +20,8 @@ const CreateOrderForm = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('carts');
+    const location = useLocation();
+    const navigate = useNavigate();
 
     // Fetch unpaid carts and products
     useEffect(() => {
@@ -43,7 +46,13 @@ const CreateOrderForm = () => {
             }
         };
         fetchData();
-    }, []);
+
+        // Clear refresh query param if present
+        const params = new URLSearchParams(location.search);
+        if (params.get('refresh')) {
+            navigate('/admin/carts', { replace: true });
+        }
+    }, [location, navigate]);
 
     // Filter carts based on search
     const filteredCarts = carts.filter(cart => 

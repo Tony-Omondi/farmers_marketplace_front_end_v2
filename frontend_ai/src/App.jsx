@@ -26,20 +26,15 @@ import AdminPaymentSuccess from './components/AdminPaymentSuccess';
 function App() {
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/" element={<Landing />} />
-      <Route path="/AddCategoryForm" element={<AddCategoryForm />} />
-      <Route path="/AddProductForm" element={<AddProductForm />} />
-      <Route path="/FarmerSales" element={<FarmerSales />} />
-      <Route path="/EditProductForm" element={<EditProductForm />} />
-      <Route path="/CreateOrderForm" element={<CreateOrderForm />} />
-      <Route path="/AdminPaymentSucces" element={<AdminPaymentSucces />} />
-      <Route path="/AddUserForm" element={<AddUserForm />} />
-      <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<PasswordResetRequest />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
+
+      {/* User routes */}
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/orders" element={<Orders />} />
       <Route path="/payments" element={<Payments />} />
@@ -47,8 +42,18 @@ function App() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-callback" element={<PaymentCallback />} />
+
+      {/* Admin routes (intentionally using /adamin/) */}
       <Route path="/adamin/login" element={<AdaminLogin />} />
       <Route path="/adamin/dashboard" element={<AdaminDashboard />} />
+      <Route path="/adamin/add-category" element={<AddCategoryForm />} />
+      <Route path="/adamin/add-product" element={<AddProductForm />} />
+      <Route path="/adamin/farmer-sales" element={<FarmerSales />} />
+      <Route path="/adamin/edit-product/:id" element={<EditProductForm />} />
+      <Route path="/adamin/create-order" element={<CreateOrderForm />} />
+      <Route path="/adamin/payment-success" element={<AdminPaymentSuccess />} />
+      <Route path="/adamin/add-user" element={<AddUserForm />} />
+      <Route path="/adamin/orders/:orderId" element={<AdminOrderDetails />} />
     </Routes>
   );
 }
