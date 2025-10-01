@@ -5,7 +5,14 @@ import { useNavigate } from 'react-router-dom';
 const BASE_URL = 'http://127.0.0.1:8000';
 
 const FarmerSales = ({ filterDateRange, customStartDate, customEndDate, searchQuery }) => {
-  const [salesData, setSalesData] = useState([]);
+  const [salesData, setSalesData] = useState({
+    past_day: [],
+    past_week: [],
+    past_month: [],
+    past_year: [],
+    custom: []
+  });
+  const [activePeriod, setActivePeriod] = useState(filterDateRange === 'custom' ? 'custom' : 'past_year');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -22,36 +29,34 @@ const FarmerSales = ({ filterDateRange, customStartDate, customEndDate, searchQu
 
         // Construct query parameters for date filtering
         const params = new URLSearchParams();
-        if (filterDateRange !== 'all') {
-          if (filterDateRange === 'custom' && customStartDate && customEndDate) {
-            params.append('start_date', customStartDate);
-            params.append('end_date', customEndDate);
-          } else {
-            const now = new Date();
-            let startDate;
-            switch (filterDateRange) {
-              case 'today':
-                startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
-                params.append('start_date', startDate);
-                break;
-              case 'yesterday':
-                startDate = new Date(now);
-                startDate.setDate(now.getDate() - 1);
-                startDate = startDate.toISOString().split('T')[0];
-                params.append('start_date', startDate);
-                params.append('end_date', startDate);
-                break;
-              case 'last7':
-                startDate = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
-                params.append('start_date', startDate);
-                break;
-              case 'last30':
-                startDate = new Date(now.setDate(now.getDate() - 30)).toISOString().split('T')[0];
-                params.append('start_date', startDate);
-                break;
-              default:
-                break;
-            }
+        if (filterDateRange !== 'all' && filterDateRange === 'custom' && customStartDate && customEndDate) {
+          params.append('start_date', customStartDate);
+          params.append('end_date', customEndDate);
+        } else if (filterDateRange !== 'all') {
+          const now = new Date();
+          let startDate;
+          switch (filterDateRange) {
+            case 'today':
+              startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
+              params.append('start_date', startDate);
+              break;
+            case 'yesterday':
+              startDate = new Date(now);
+              startDate.setDate(now.getDate() - 1);
+              startDate = startDate.toISOString().split('T')[0];
+              params.append('start_date', startDate);
+              params.append('end_date', startDate);
+              break;
+            case 'last7':
+              startDate = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
+              params.append('start_date', startDate);
+              break;
+            case 'last30':
+              startDate = new Date(now.setDate(now.getDate() - 30)).toISOString().split('T')[0];
+              params.append('start_date', startDate);
+              break;
+            default:
+              break;
           }
         }
 
@@ -61,6 +66,7 @@ const FarmerSales = ({ filterDateRange, customStartDate, customEndDate, searchQu
         });
         console.log('Farmer sales data:', response.data);
         setSalesData(response.data);
+        setActivePeriod(filterDateRange === 'custom' ? 'custom' : 'past_year');
       } catch (err) {
         console.error('Farmer sales error:', err.response?.data);
         setError(err.response?.data?.detail || 'Failed to load farmer sales data');
@@ -85,10 +91,16 @@ const FarmerSales = ({ filterDateRange, customStartDate, customEndDate, searchQu
     );
   };
 
-  const filteredSalesData = filterDataBySearch(salesData);
+  const periods = [
+    { id: 'past_year', label: 'Past Year' },
+    { id: 'past_month', label: 'Past Month' },
+    { id: 'past_week', label: 'Past Week' },
+    { id: 'past_day', label: 'Past Day' },
+    ...(filterDateRange === 'custom' && customStartDate && customEndDate ? [{ id: 'custom', label: 'Custom Range' }] : [])
+  ];
 
   return (
-    <div>
+    <div style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
       {error && (
         <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
           <p>{error}</p>
@@ -97,7 +109,25 @@ const FarmerSales = ({ filterDateRange, customStartDate, customEndDate, searchQu
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Farmer Sales</h2>
-        <span className="text-gray-500">{filteredSalesData.length} farmers</span>
+        <span className="text-gray-500">{filterDataBySearch(salesData[activePeriod]).length} farmers</span>
+      </div>
+
+      <div className="mb-6">
+        <div className="flex overflow-x-auto space-x-4 border-b">
+          {periods.map(period => (
+            <button
+              key={period.id}
+              className={`py-2 px-4 text-sm font-medium whitespace-nowrap ${
+                activePeriod === period.id
+                  ? 'border-b-2 border-emerald-600 text-emerald-600'
+                  : 'text-gray-600 hover:text-emerald-600'
+              }`}
+              onClick={() => setActivePeriod(period.id)}
+            >
+              {period.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -117,14 +147,16 @@ const FarmerSales = ({ filterDateRange, customStartDate, customEndDate, searchQu
               </tr>
             </thead>
             <tbody>
-              {filteredSalesData.map(farmer => (
+              {filterDataBySearch(salesData[activePeriod]).map(farmer => (
                 <tr key={farmer.farmer_id} className="border-t hover:bg-gray-50">
-                  <td className="p-3">{farmer.full_name}</td>
-                  <td className="p-3">{farmer.email}</td>
-                  <td className="p-3">{parseFloat(farmer.total_sales).toFixed(2)}</td>
-                  <td className="p-3">{farmer.order_count}</td>
+                  <td className="p-3">{farmer.full_name || 'Unknown'}</td>
+                  <td className="p-3">{farmer.email || 'N/A'}</td>
+                  <td className="p-3">{parseFloat(farmer.total_sales || 0).toFixed(2)}</td>
+                  <td className="p-3">{farmer.order_count || 0}</td>
                   <td className="p-3">
-                    {new Date(farmer.last_sale_date).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
+                    {farmer.last_sale_date
+                      ? new Date(farmer.last_sale_date).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })
+                      : 'N/A'}
                   </td>
                 </tr>
               ))}

@@ -20,6 +20,7 @@ import AddProductForm from './components/AddProductForm';
 import AdminOrderDetails from './components/AdminOrderDetails';
 import AddUserForm from './components/AddUserForm';
 import FarmerSales from './components/FarmerSales';
+import EditProductForm from './components/EditProductForm';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
       <Route path="/AddCategoryForm" element={<AddCategoryForm />} />
       <Route path="/AddProductForm" element={<AddProductForm />} />
       <Route path="/FarmerSales" element={<FarmerSales />} />
+      <Route path="/EditProductForm" element={<EditProductForm />} />
       <Route path="/CreateOrderForm" element={<CreateOrderForm />} />
       <Route path="/AddUserForm" element={<AddUserForm />} />
       <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />
