@@ -45,19 +45,18 @@ const PaymentCallback = () => {
         return;
       }
 
-      // Declare isAdmin with fallback
       let isAdmin = false;
 
       try {
-        console.log('Starting parallel API calls for reference:', reference);
+        console.log('Starting API calls for reference:', reference);
+
+        // Fetch user and payment verification together
         const [userResponse, paymentResponse] = await Promise.all([
           axios.get(`${BASE_URL}/api/accounts/me/`, {
             headers: { Authorization: `Bearer ${token.trim()}` },
             timeout: 10000,
-          }).catch((profileErr) => {
-            console.warn('Profile fetch failed:', profileErr.response?.status, profileErr.response?.data);
-            return { data: { is_staff: false } };  // Fallback: assume non-admin
-          }),
+          }).catch(() => ({ data: { is_staff: false } })), // fallback if profile fails
+
           axios.get(`${BASE_URL}/api/orders/orders/payment/callback/`, {
             headers: { Authorization: `Bearer ${token.trim()}` },
             params: { reference },
@@ -65,27 +64,18 @@ const PaymentCallback = () => {
           }),
         ]);
 
-        console.log('Payment reference:', reference);
         console.log('Payment response:', paymentResponse.data);
-        console.log('User profile:', userResponse.data);
 
         isAdmin = userResponse.data.is_staff;
         const paymentData = paymentResponse.data;
 
         if (paymentData.status) {
-          const orderResponse = await axios.get(`${BASE_URL}/api/orders/orders/`, {
-            headers: { Authorization: `Bearer ${token.trim()}` },
-            params: { order_id: paymentData.order_id },
-            timeout: 10000,
-          });
-          console.log('Order response:', orderResponse.data);
-          const order = orderResponse.data.find((o) => o.order_id === paymentData.order_id);
-          if (order) {
-            navigate(isAdmin ? '/adamin/payment-success' : '/payment-success', { state: { orderId: order.id } });
-            return;  // Exit early on success
-          } else {
-            setError('Order not found.');
-          }
+          // ✅ Redirect directly with order.id from backend response
+          navigate(
+            isAdmin ? '/adamin/payment-success' : '/payment-success',
+            { state: { orderId: paymentData.id } }
+          );
+          return;
         } else {
           setError(paymentData.message || 'Payment verification failed.');
         }
@@ -101,7 +91,7 @@ const PaymentCallback = () => {
         setError(errorMessage);
       }
 
-      // Safe navigation with isAdmin fallback
+      // fallback if something fails
       const fallbackPath = isAdmin ? '/adamin/carts?refresh=true' : '/cart';
       setTimeout(() => navigate(fallbackPath), 3000);
     };

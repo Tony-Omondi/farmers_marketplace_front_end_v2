@@ -23,57 +23,115 @@ const EditProductForm = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  const refreshToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+      const response = await axios.post(`${BASE_URL}/api/token/refresh/`, { refresh: refreshToken });
+      localStorage.setItem('access_token', response.data.access);
+      return response.data.access;
+    } catch (err) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      navigate('/admin/login');
+      return null;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!productId || isNaN(productId)) {
-        setError('Invalid product ID');
+        setError(`Invalid product ID: ${productId}`);
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        const accessToken = localStorage.getItem('access_token');
+        let accessToken = localStorage.getItem('access_token');
         if (!accessToken) {
-          navigate('/adamin/login');
+          navigate('/admin/login');
           return;
         }
 
         // Fetch product details
-        const productResponse = await axios.get(`${BASE_URL}/api/products/${productId}/`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+        let productResponse;
+        try {
+          productResponse = await axios.get(`${BASE_URL}/api/products/${productId}/`, {
+            headers: { Authorization: `Bearer ${accessToken.trim()}` }
+          });
+        } catch (err) {
+          if (err.response?.status === 401) {
+            accessToken = await refreshToken();
+            if (!accessToken) return;
+            productResponse = await axios.get(`${BASE_URL}/api/products/${productId}/`, {
+              headers: { Authorization: `Bearer ${accessToken.trim()}` }
+            });
+          } else {
+            throw err;
+          }
+        }
+        console.log('Product Response:', productResponse.data);
         setProduct({
-          name: productResponse.data.name,
+          name: productResponse.data.name || '',
           description: productResponse.data.description || '',
-          price: productResponse.data.price,
-          stock: productResponse.data.stock,
+          price: productResponse.data.price || '',
+          stock: productResponse.data.stock || '',
           category: productResponse.data.category || '',
           farmer: productResponse.data.farmer || '',
-          is_displayed: productResponse.data.is_displayed,
+          is_displayed: productResponse.data.is_displayed || false,
           images: productResponse.data.images || []
         });
 
         // Fetch categories
-        const categoriesResponse = await axios.get(`${BASE_URL}/api/categories/`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+        let categoriesResponse;
+        try {
+          categoriesResponse = await axios.get(`${BASE_URL}/api/categories/`, {
+            headers: { Authorization: `Bearer ${accessToken.trim()}` }
+          });
+        } catch (err) {
+          if (err.response?.status === 401) {
+            accessToken = await refreshToken();
+            if (!accessToken) return;
+            categoriesResponse = await axios.get(`${BASE_URL}/api/categories/`, {
+              headers: { Authorization: `Bearer ${accessToken.trim()}` }
+            });
+          } else {
+            throw err;
+          }
+        }
         setCategories(categoriesResponse.data);
 
         // Fetch farmers
-        const farmersResponse = await axios.get(`${BASE_URL}/api/adamin/farmers/`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+        let farmersResponse;
+        try {
+          farmersResponse = await axios.get(`${BASE_URL}/api/admin/farmers/`, {
+            headers: { Authorization: `Bearer ${accessToken.trim()}` }
+          });
+        } catch (err) {
+          if (err.response?.status === 401) {
+            accessToken = await refreshToken();
+            if (!accessToken) return;
+            farmersResponse = await axios.get(`${BASE_URL}/api/admin/farmers/`, {
+              headers: { Authorization: `Bearer ${accessToken.trim()}` }
+            });
+          } else {
+            throw err;
+          }
+        }
         setFarmers(farmersResponse.data);
       } catch (err) {
-        console.error('Error fetching product data:', err.response?.data);
-        setError(err.response?.data?.detail || 'Failed to load product data');
+        console.error('Error fetching product data:', err.response?.data || err.message);
         if (err.response?.status === 401) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/adamin/login');
+          navigate('/admin/login');
         } else if (err.response?.status === 404) {
-          setError('Product not found');
+          setError(`Product with ID ${productId} not found`);
+        } else {
+          setError(err.response?.data?.detail || `Failed to load product data: ${err.message}`);
         }
       } finally {
         setIsLoading(false);
@@ -96,16 +154,17 @@ const EditProductForm = () => {
 
   const handleDeleteImage = async (imageId) => {
     try {
-      const accessToken = localStorage.getItem('access_token');
+      let accessToken = localStorage.getItem('access_token');
       await axios.post(
         `${BASE_URL}/api/products/${productId}/delete-image/`,
         { image_id: imageId },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken.trim()}` } }
       );
       setProduct((prev) => ({
         ...prev,
         images: prev.images.filter((img) => img.id !== imageId)
       }));
+      setError('');
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete image');
     }
@@ -114,29 +173,49 @@ const EditProductForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const accessToken = localStorage.getItem('access_token');
+      let accessToken = localStorage.getItem('access_token');
       const formData = new FormData();
       formData.append('name', product.name);
       formData.append('description', product.description);
       formData.append('price', product.price);
       formData.append('stock', product.stock);
-      if (product.category) formData.append('category', product.category);
-      if (product.farmer) formData.append('farmer', product.farmer);
+      if (product.category) formData.append('category_id', product.category);
+      if (product.farmer) formData.append('farmer_id', product.farmer);
       formData.append('is_displayed', product.is_displayed);
       newImages.forEach((image) => formData.append('image_files', image));
 
-      const response = await axios.patch(
-        `${BASE_URL}/api/products/${productId}/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'multipart/form-data'
+      let response;
+      try {
+        response = await axios.patch(
+          `${BASE_URL}/api/products/${productId}/`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken.trim()}`,
+              'Content-Type': 'multipart/form-data'
+            }
           }
+        );
+      } catch (err) {
+        if (err.response?.status === 401) {
+          accessToken = await refreshToken();
+          if (!accessToken) return;
+          response = await axios.patch(
+            `${BASE_URL}/api/products/${productId}/`,
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken.trim()}`,
+                'Content-Type': 'multipart/form-data'
+              }
+            }
+          );
+        } else {
+          throw err;
         }
-      );
+      }
       console.log('Product updated:', response.data);
-      navigate('/adamin/dashboard');
+      navigate('/admin/dashboard');
     } catch (err) {
       console.error('Error updating product:', err.response?.data);
       setError(err.response?.data?.detail || 'Failed to update product');
@@ -157,7 +236,7 @@ const EditProductForm = () => {
         <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
           <p>{error}</p>
           <button
-            onClick={() => navigate('/adamin/dashboard')}
+            onClick={() => navigate('/admin/dashboard')}
             className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
           >
             Back to Dashboard
@@ -299,7 +378,7 @@ const EditProductForm = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/adamin/dashboard')}
+            onClick={() => navigate('/admin/dashboard')}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
           >
             Cancel
