@@ -30,13 +30,12 @@ const PaymentCallback = () => {
         // Check if user is admin
         let isAdmin = false;
         try {
-          const userResponse = await axios.get(`${BASE_URL}/api/accounts/profile/`, {
+          const userResponse = await axios.get(`${BASE_URL}/api/accounts/me/`, {
             headers: { Authorization: `Bearer ${token.trim()}` },
           });
-          isAdmin = userResponse.data.is_staff;
+          isAdmin = userResponse.data.is_staff || false;
         } catch (err) {
           console.error('Profile fetch error:', err.response?.data || err.message);
-          // Continue with payment verification even if profile fetch fails
         }
 
         const response = await axios.get(`${BASE_URL}/api/orders/orders/payment/callback/`, {
@@ -45,7 +44,6 @@ const PaymentCallback = () => {
         });
 
         if (response.data.status) {
-          // Fetch the order to get its pk (id)
           const orderResponse = await axios.get(`${BASE_URL}/api/orders/orders/`, {
             headers: { Authorization: `Bearer ${token.trim()}` },
             params: { order_id: response.data.order_id },
@@ -63,8 +61,13 @@ const PaymentCallback = () => {
         }
       } catch (err) {
         console.error('Payment callback error:', err.response?.data || err.message);
-        setError(err.response?.data?.message || 'Failed to verify payment.');
-        setTimeout(() => navigate(isAdmin ? '/admin/carts?refresh=true' : '/cart'), 3000);
+        if (err.response?.status === 401) {
+          setError('Session expired. Please log in again.');
+          navigate('/login'); // Fixed line
+        } else {
+          setError(err.response?.data?.message || 'Failed to verify payment.');
+          setTimeout(() => navigate(isAdmin ? '/admin/carts?refresh=true' : '/cart'), 3000);
+        }
       }
     };
 
