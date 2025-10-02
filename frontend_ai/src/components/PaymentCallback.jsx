@@ -20,7 +20,7 @@ const PaymentCallback = () => {
       const reference = params.get('reference');
       if (!reference) {
         setError('No payment reference provided.');
-        setTimeout(() => navigate('/admin/carts?refresh=true'), 3000);
+        setTimeout(() => navigate('/adamin/carts?refresh=true'), 3000);
         return;
       }
 
@@ -81,7 +81,7 @@ const PaymentCallback = () => {
           console.log('Order response:', orderResponse.data);
           const order = orderResponse.data.find((o) => o.order_id === paymentData.order_id);
           if (order) {
-            navigate(isAdmin ? '/admin/payment-success' : '/payment-success', { state: { orderId: order.id } });
+            navigate(isAdmin ? '/adamin/payment-success' : '/payment-success', { state: { orderId: order.id } });
             return;  // Exit early on success
           } else {
             setError('Order not found.');
@@ -102,7 +102,7 @@ const PaymentCallback = () => {
       }
 
       // Safe navigation with isAdmin fallback
-      const fallbackPath = isAdmin ? '/admin/carts?refresh=true' : '/cart';
+      const fallbackPath = isAdmin ? '/adamin/carts?refresh=true' : '/cart';
       setTimeout(() => navigate(fallbackPath), 3000);
     };
 
